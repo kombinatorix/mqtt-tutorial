@@ -28,13 +28,14 @@ und publishen:
 <tr>
 <td valign="top">
     <pre lang = "bash">
-    mosquitto_pub
+    $ mosquitto_sub -h localhost -t meinTopic
+    meineNachricht
     </pre>
 
 </td>
 <td valign="top">
     <pre lang = "bash">
-    mosquitto_sub
+    $ mosquitto_pub -h localhost -m meineNachricht -t meinTopic
     </pre>
 </td>
 </tr>
