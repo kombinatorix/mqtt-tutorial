@@ -11,6 +11,9 @@ dann wird diese Nachricht an alle Abbonenten weiterverteilt.
 MQTT sendet standarmäßig alles unverschlüsselt auf Port 1883. Ansonsten
 ist der Standardport für die mit TLS verschlüsselten Nachrichten 8883.
 
+Alle technischen Details können auch [hier][http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html]
+nachgelesen werden.
+
 ## Topics
 Topics sind hierarchisch aufgebaut. Die allgemeinste Spezifizierung
 kommt als erstes und dann die nächst spezifischere usw.; immer mit einem
