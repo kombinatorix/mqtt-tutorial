@@ -633,6 +633,32 @@ msg.payload.replace("\x00","")
 ```
 # Netzwerk profiling
 
+## $SYS-Topics
+Die meisten Broker stellen $SYS-Topics zur Verfügung. Unter Linux muss man
+beim subscriben aufpassen. So muss das $ meist durch \ escaped werden.
+
+Es gibt folgende Topics, die bereitgestellt werden sollten ( [siehe](https://github.com/mqtt/mqtt.github.io/wiki/SYS-Topics) ):
+| Topic | Beschreibung |
+| --- | --- |
+|$SYS/broker/load/bytes/received  |  |
+|$SYS/broker/load/bytes/sent  |  |
+|$SYS/broker/clients/connected  |  |
+|$SYS/broker/clients/disconnected  |  |
+|$SYS/broker/clients/maximum  |  |
+|$SYS/broker/clients/total  |  |
+|$SYS/broker/messages/received  |  |
+|$SYS/broker/messages/sent  |  |
+|$SYS/broker/messages/publish/dropped  |  |
+|$SYS/broker/messages/publish/received  |  |
+|$SYS/broker/messages/publish/sent  |  |
+|$SYS/broker/messages/retained/count  |  |
+|$SYS/broker/subscriptions/count  |  |
+|$SYS/broker/time  |  |
+|$SYS/broker/uptime  |  |
+|$SYS/broker/version  |  |
+
+## Wireshark
+
 # Literatur
 [Correlation Analysis of MQTT Loss and Delay 
 According to QoS Level](http://cgweb1.northumbria.ac.uk/SubjectAreaResources/KF7046/papers/review/iot/lkh13.pdf)
