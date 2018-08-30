@@ -20,7 +20,34 @@ kommt als erstes und dann die nächst spezifischere usw.; immer mit einem
 
 Man kann auch leere Subtopics haben:
 
-`` vor_leerem_Subtopic//nach_leerem_Subtopic ```
+``` vor_leerem_Subtopic//nach_leerem_Subtopic ```
+
+### Wildcards
+Es gibt zwei Arten von Wildcards: *Single level wildcard* **+** und
+*Multi level wildcard* **#**
+
+Mit + kann man auf einem Level alle Subtopics matchen. Damit würde
+``` Zuhause/Wohnzimmer/+/Temperatur ``` z.B. auf
+
+| Topic |
+| --- |
+| Zuhause/Wohnzimmer/Sensor1/Temperatur |
+| Zuhause/Wohnzimmer/Sensor_XA432/Temperatur |
+| Zuhause/Wohnzimmer//Temperatur |
+| Zuhause/Wohnzimmer/WasAuchImmer/Temperatur |
+matchen und man würde von allen diesen Topics Nachrichten bekommen.
+
+Die Wildcard # match auf alle Subtopics der gleichen und weiteren
+Ebenen. Deshalb muss  # immer in der Topicbeschreibung zuletzt stehen.
+``` Zuhause/# ``` match z.B. auf:
+
+
+| Topic |
+| --- |
+| Zuhause/Wohnzimmer/Sensor_XA432/Temperatur |
+| Zuhause/Schlafzimmer/Energieverbruch |
+| Zuhause/Toilette/Sensor_YZ51/Luftfeuchtigkeit |
+
 
 ## Nachrichtentypen
 | Nachrichtentyp | Beschreibung |
