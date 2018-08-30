@@ -1,6 +1,7 @@
 import paho.mqtt.client as mqtt
 import json
 
+
 # Ist ein Callback, der ausgeführt wird, wenn sich mit dem Broker verbunden wird
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -19,23 +20,23 @@ def on_connect(client, userdata, flags, rc):
     else:
         print("Ungültiger Returncode")
 
+
 # Ist ein Callback, der ausgeführt wird, wenn eine Nachricht empfangen wird
 def on_message(client, userdata, msg):
-    print("Topic: \t\t"+msg.topic)
-    print("Payload: \t"+str(msg.payload))
+    print("Topic: \t\t" + msg.topic)
+    print("Payload: \t" + str(msg.payload))
     payload = json.loads(str(msg.payload))
     keys = payload.keys()
-    print("Keys: "+str(keys))
-    _dict = {'keys':str(keys)}
+    print("Keys: " + str(keys))
+    _dict = {'keys': str(keys)}
     _payload = json.dumps(_dict)
-    client.publish("keys",_payload)
+    client.publish("keys", _payload)
+
+
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 
 client.connect("localhost", 1883, 60)
 
-client.loop_start()
-
-while True:
-    pass
+client.loop_forever()
