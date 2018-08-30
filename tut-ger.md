@@ -22,6 +22,13 @@ Man kann auch leere Subtopics haben:
 
 ``` vor_leerem_Subtopic//nach_leerem_Subtopic ```
 
+
+Topics dürfen UTF-8 Zeichen enthalten, außer Leerzeichen.
+Zudem muss mindestens ein ichen ngegeben werden. Außerdem dürfen nicht
+mehr als 65535 Bytes zur Kodierung genutzt werden.
+Das heißt, einem stehen mindestens 16383 Zeichen zur Verfügung, was mehr
+als genug ist.
+
 ### Wildcards
 Es gibt zwei Arten von Wildcards: *Single level wildcard* **+** und
 *Multi level wildcard* **#**
