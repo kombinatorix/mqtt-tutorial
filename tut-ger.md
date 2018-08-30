@@ -459,6 +459,91 @@ client.will_set(topic, payload=None, qos=0, retain=False)
 
 
 # MQTT in Verbindung mit JSON und Protobuf
+Bisher haben wir die Payload von MQTT nur genutzt, um Strings zu übertragen.
+Dieses Konzept kann, zweistufig erweitert werden. So kann ein JSON-String
+über das Netzwerk gesendet werden, das von Python direkt in ein Dictionary
+übersetzt wird. Damit fällt das eigene Parsen des Strings weg. Hat aber auch
+den Nachteil, dass eventuell mehr Zeichen als Payload verschickt werden müssen.
+Nutzt man Googles protobuf, kann mit ein paar einbußen in der Flexibilität
+die Größe der Payload drastisch reduziert werden. Außerdem kann sofort auf
+die entsprechenden Datentypen - ohne eigenes Parsing - zugegriffen werden.
+
+## JSON
+
+## Protobuf
+Zuerst müssen wir erstmal Protobuf installieren. Dazu folgen wir der [Anleitung](https://developers.google.com/protocol-buffers/docs/downloads)
+
+Als nächstes müssen wir unsere Protobufnachricht definieren. Dies tun wir in der [payload.proto](src/payload.proto):
+```
+syntax = "proto2";
+
+package tutorial;
+
+message payload {
+  required string payload = 1;
+  required int32 id = 2;
+}
+```
+
+Als nächstes müssen wir die entsprechende Python-Datei erstellen. Die allgemeine
+Syntax dafür lautet:
+```bash
+protoc -I=$SRC_DIR --python_out=$DST_DIR $SRC_DIR/addressbook.proto
+```
+
+In unserem Fall ist der Befehl (wir befinden uns im src-Ordner):
+```bash
+protoc -I=./ --python_out=./ ./payload.proto 
+```
+
+Jetzt finden wir eine *payload_pb2.py*-Datei im src-Ordner, die wir einbinden können:
+
+```python
+import paho.mqtt.client as mqtt
+import payload_pb2
+
+# Ist ein Callback, der ausgeführt wird, wenn sich mit dem Broker verbunden wird
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Verbindung akzeptiert")
+        client.subscribe("protobuf")
+    elif rc == 1:
+        print("Falsche Protokollversion")
+    elif rc == 2:
+        print("Identifizierung fehlgeschlagen")
+    elif rc == 3:
+        print("Server nicht erreichbar")
+    elif rc == 4:
+        print("Falscher benutzername oder Passwort")
+    elif rc == 5:
+        print("Nicht autorisiert")
+    else:
+        print("Ungültiger Returncode")
+
+# Ist ein Callback, der ausgeführt wird, wenn eine Nachricht empfangen wird
+def on_message(client, userdata, msg):
+    print("Topic: \t\t"+msg.topic)
+    _payload = payload_pb2.payload()
+    _payload.ParseFromString(msg.payload)
+    print("Payload: \t"+_payload.payload)
+    print("id: \t\t"+str(_payload.id))
+
+
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
+
+
+client.connect("localhost", 1883, 60)
+
+_payload = payload_pb2.payload()
+_payload.payload = "Meine Payload"
+_payload.id = 1
+client.loop(.1)
+client.publish("protobuf", _payload.SerializeToString())
+
+client.loop_forever()
+```
 
 # Best practices
 
