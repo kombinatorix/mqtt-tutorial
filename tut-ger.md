@@ -610,6 +610,27 @@ client.loop_forever()
 
 # Best practices
 
+## Topics
+Topics sollten sehr kleinschrittig in verschiedene Subtopics unterteilt sein.
+Es sollte möglichst kein Parsing im Client stattfinden. Vor allem weil das
+Erstellen eines Topics sehr wenig Overhead erzeugt.
+### Kein vorangestelten Slash
+
+### Das Topic soll kurz und bündig sein
+
+### Man sollte sich auf ASCII-Zeichen beschränken
+
+### Man sollte einen unique identifier oder eine ClientID im Topic haben
+
+### Topics sollen spezifisch und nicht allgemein sein
+
+## Payload
+Wenn die Payload als lesbarer String übertragen wird, sollte die Payload "gereinigt"
+werden. Es kann sein, dass der String ein nullterminierter String ist.
+D.h.:
+```python
+msg.payload.replace("\x00","")
+```
 # Netzwerk profiling
 
 # Literatur
