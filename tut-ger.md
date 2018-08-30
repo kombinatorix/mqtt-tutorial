@@ -97,7 +97,7 @@ sessionPresent (boolean), returnCode
 | 2 | Identifizierung fehlgeschlagen |
 | 3 | Server nicht erreichbar |
 | 4 | Falscher Benutzername oder Passwort |
-| 5 | Nicht authorisiert |
+| 5 | Nicht autorisiert |
 
 
 ### PUBLISH
