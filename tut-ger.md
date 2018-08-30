@@ -11,7 +11,7 @@ dann wird diese Nachricht an alle Abbonenten weiterverteilt.
 MQTT sendet standarmäßig alles unverschlüsselt auf Port 1883. Ansonsten
 ist der Standardport für die mit TLS verschlüsselten Nachrichten 8883.
 
-Alle technischen Details können auch [hier][http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html]
+Alle technischen Details können auch [hier](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html)
 nachgelesen werden.
 
 ## Topics
@@ -101,7 +101,7 @@ sessionPresent (boolean), returnCode
 
 
 ### PUBLISH
-PUBLISH sendet folgende Informationen (*kursiv* ist optional) mit:
+PUBLISH sendet folgende Informationen mit:
 
 packetID (natrüliche Zahl und 0, wenn QoS gleich 0), topicName (string),
 qos (0,1 oder 2), retainFlag (boolean), payload (string), dupFlag
@@ -112,7 +112,7 @@ qos (0,1 oder 2), retainFlag (boolean), payload (string), dupFlag
 ### PUBREL
 ### PUBCOMP
 ### SUBSCRIBE
-SUBSCRIBE sendet folgende Informationen (*kursiv* ist optional) mit:
+SUBSCRIBE sendet folgende Informationen mit:
 
 packetId (natürliche Zahl), qos1 (0,1 oder 2), topic1 (string),
 qos2 (0,1 oder 2), topic2 (string), qos3 (0,1 oder 2), topic3 (string),
@@ -148,7 +148,7 @@ packetId (ntürliche Zahl)
 # Get things running
 Um MQTT zu nutzen, braucht man als erstes einen MQTT-Broker. Einer der
 bekanntesten Broker ist **Mosquitto**.
-Man kann sich den broker [hier][https://mosquitto.org/download/]
+Man kann sich den broker [hier](https://mosquitto.org/download/)
 herunterladen.
 Für Ubuntu geht das ganze aber am einfachsten mit:
 
@@ -196,6 +196,14 @@ Mit ``` mosquitto_pub ``` haben wir die Nachricht **meineNachricht**
 über unter dem Topic **meinTopic** publisht. Dies wurde dann im Tab 1
 für uns sichtbar.
 
+Um tiefer einzusteigen, nutzen wir Python 3 und das Paket **paho-mqtt***[]:
+
+```bash
+$ pip install paho-mqtt
+```
+
+Jetzt können wir mit unserem ersten [Beispiel](src/example1.py) anfangen.
+
 ```python
 import paho.mqtt.client as mqtt
 
@@ -220,14 +228,202 @@ client.connect("localhost", 1883, 60)
 client.loop_forever()
 ```
 
+Nehmen wir das Programm Schritt für Schritt auseinander:
+
+```python
+import paho.mqtt.client as mqtt
+```
+Mit dem import wird der Code aus dem eben installierten paho-mqtt-Paket
+in das aktuelle Programm geladen.
+
+```python
+def on_connect(client, userdata, flags, rc):
+    print("Hat sich mit Result code " + str(rc) + " mit dem Broker verbunden.")
+
+    client.subscribe("allgemein/spezieller")
+```
+Dies ist eine Funktion, die als Callback fungiert. Sie wird aufgerufen,
+wenn der Client versucht sich mit dem Server zu verbinden.
+Als Parameter hat die Funktion *client*, *userdata*, *flags* und *rc*.
+Wofür man *userdata* und *flags* nutzt, wird später erläutert.
+
+Wichtig ist der Returncode *rc*. An ihm kann geschaut werden, ob die
+Verbindung geklappt hat.
+
+*client* wird genutzt, um ein Topic zu subscriben. Es ist "best practice"
+dies direkt beim Verbindungsaufbau zu tun, da dies dann auch immer
+automatisch bei jedem reconnect geschieht.
+
+```python
+def on_message(client, userdata, msg):
+    print("Topic: \t\t"+msg.topic)
+    print("Payload: \t"+str(msg.payload))
+```
+
+Die Funktion *on_message* wird als Callback immer dann aufgerufen, wenn
+eine Nachricht auf einem abbonierten Topic ankommt.
+Da das Topic immer als String übermittelt wird, kann dies sofort
+ausgegeben werden. Die Payload ist ein Bytestream und muss erst in einen
+String übersetzt werden.
+
+Mit der folgenden Zeile wird ein client-Objekt erzeugt
+```python
+client = mqtt.Client()
+```
+und mit
+```python
+client.on_connect = on_connect
+client.on_message = on_message
+```
+werden dem client-Objekt die Callbackfunktionen (von oben) zugewiesen.
+
+Mit
+```python
+client.connect("localhost", 1883, 60)
+```
+verbindet versucht der Client sich mit dem Broker zu verbinden, der
+auf diesem System läuft. *localhost* ist ein Synonym für die IP-Adresse
+127.0.0.1 und 1883 ist der Standardport für unverschlüsselte
+MQTT-Nachrichten. Die 60 steht für das keep-alive-Intervall in Sekunden.
+
+Als letztes haben wir:
+```python
+client.loop_forever()
+```
+Dies ist die Eventschleife, die auf neue Nachrichten und dergleichen
+wartet. Ohne Sie würde sich das Programm sofort beenden.
+
+## Returncode nutzen
+Im zweiten [Beispiel](src/example2.py) wird gezeigt, wie man den Returncode von CONACK
+nutzen kann:
+
+```python
+import paho.mqtt.client as mqtt
+
+
+# Ist ein Callback, der ausgeführt wird, wenn sich mit dem Broker verbunden wird
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Verbindung akzeptiert")
+        client.subscribe("allgemein/spezieller")
+    elif rc == 1:
+        print("Falsche Protokollversion")
+    elif rc == 2:
+        print("Identifizierung fehlgeschlagen")
+    elif rc == 3:
+        print("Server nicht erreichbar")
+    elif rc == 4:
+        print("Falscher benutzername oder Passwort")
+    elif rc == 5:
+        print("Nicht autorisiert")
+    else:
+        print("Ungültiger Returncode")
+
+# Ist ein Callback, der ausgeführt wird, wenn eine Nachricht empfangen wird
+def on_message(client, userdata, msg):
+    print("Topic: \t\t"+msg.topic)
+    print("Payload: \t"+str(msg.payload))
+
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
+
+client.connect("localhost", 1883, 60)
+
+client.loop_forever()
+```
+
+Mit einer Abfrage des Returncodes kann auf Verbindungsfehlschläge reagiert
+werden. In unserem Beispiel wird allerdings erstmal nur die Information
+an den Benutzer weitergereicht.
+
+## Loops
+Wir haben eben ``` loop_forever()``` kennengelernt. paho-mqtt gibt uns
+allerdings drei verschiedene Arten eine Loop zu nutzen:
+
++ loop_forever()
++ loop_start()
++ loop()
+
+### loop\_forever()
+```loop_forever()``` erzeugt eine blockendierende Eventschleife. Es kann
+nichts mehr neben der Eventloop laufen. Für die meisten Anwendungszwecke
+ist dies auch mehr als ausreichend.
+
+
+### loop\_start()
+```loop_start()``` erstellt einen Thread, der eine Eventloop enthält.
+Dies blockiert den Haupthread nicht. Man muss jedoch beachten, dass der
+Thread automatisch beendet wird, sofern das Hauptprogramm ein Ende
+findet.
+
+### loop()
+```loop()``` muss mit einem Zahlenwert, z.B. ```client.loop(.2)``` 
+aufgerufen.
+Die Schleife blockiert dann den Haupthread für 200ms. Hier muss man
+selbständig ```loop()``` in regelmäßigen abständen aufrufen.
+
+### Stoppen einer Schleife
+Mit ```client.loop_stop()``` kann eine Schleife automatisch gestoppt
+werden. Z.B. kann das in einem *Disconnect*-Callback geschehen.
+Jedoch sollte man sich sicher sein, dass es das Verhalten ist, dass
+man sich wünscht.
+
+### Mehrere clients
+Hat man mehrere Clients, die zum gleichen oder verschieden Brokern
+verbunden wird, kann man nicht mehr auf ```loop_forever()```
+zurückgreifen, da diese Schleife blockierend ist. 
+Es bleiben einem also nur ```loop_start()``` und ```loop()```.
+Da ```loop_start()``` jedesmal einen neuen Thread erstellt ist
+diese Möglichkeit nur für wenige clients geeignet. Wächst die
+Zahl der Clients, sollte man auf ```loop()``` zurückgreifen.
+Ein Beispiel, wie man dies realisieren kann, ist wie folgt:
+
+```python
+number_of_clients=7
+clients=[]
+mqtt.Client.connected_flag=False
+
+for i in range(number_of_clients):
+    clientid = "id-"+str(i)
+    clients.append(mqtt.Client(clientid))
+for client in clients:
+    client.connect(...)
+while True:
+    for client in clients:
+        client.loop(0.01)
+        if not client.connected_flag:
+            client.connect()
+```
+
+Oder bei einer kleinen Anzahl von Clients:
+
+
+```python
+number_of_clients=7
+clients=[]
+mqtt.Client.connected_flag=False
+
+for i in range(number_of_clients):
+    clientid = "id-"+str(i)
+    clients.append(mqtt.Client(clientid))
+for client in clients:
+    client.connect()
+    client.loop_start()
+```
+
+
+
 # QoS und Co.
 
+## Quality of Service
 | Quality of Service-Level | Bedeutung |
 | --- | --- |
 | 0 | Höchstens eine Nachricht kommt an |
 | 1 | Mindestens eine Nachricht kommt an |
 | 2 | Genau eine Nachricht kommt an |
 
+##
 
 # MQTT in Verbindung mit JSON und Protobuf
 
