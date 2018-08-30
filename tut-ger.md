@@ -408,13 +408,16 @@ for i in range(number_of_clients):
     clientid = "id-"+str(i)
     clients.append(mqtt.Client(clientid))
 for client in clients:
-    client.connect()
+    client.connect_async()
     client.loop_start()
 ```
 
 
 
 # QoS und Co.
+Alles was in diesem Abschnitt erklärt wir kann [hier](https://pypi.org/project/paho-mqtt/)
+noch einmal nachgelesen werden. Dort stehen natürlich noch viel mehr Optionen und Funktionen,
+die man nutzen kann.
 
 ## Quality of Service
 | Quality of Service-Level | Bedeutung |
@@ -423,10 +426,44 @@ for client in clients:
 | 1 | Mindestens eine Nachricht kommt an |
 | 2 | Genau eine Nachricht kommt an |
 
-##
+
+## Subscriben mehrerer Topics
+
+```python
+client.subscribe([("erstes_Topic",0),("zweites_topic",2)])
+```
+
+
+## Retained Messages 
+Eine Nachricht für die das retained flag und ggf. das QoS-level
+gesetzt wurde, wird sich vom broker gemerkt. Und wenn ein Client
+für das entsprechende Topic subscribed, wird ihm die Nachricht
+mit dem entsprechenden QoS gesendet.
+
+Ein Beispiel wäre:
+
+```python
+client.publish("meinTopic", "Meine Nachricht/Payload", qos=1, retain=True)
+```
+
+**Wichtig!** Jede neue Nachricht mit dem retained flag überschreibt die
+letzte, dem Broker bekannte, retained message.
+
+## Last Will and Testament (LWT)
+Der letzte Wille wird veröffentlicht, wenn sich der client die Verbindung
+nicht sauber über ```disconnect()``` trennt.
+
+```python
+client.will_set(topic, payload=None, qos=0, retain=False)
+```
+
 
 # MQTT in Verbindung mit JSON und Protobuf
 
 # Best practices
 
 # Netzwerk profiling
+
+# Literatur
+[Correlation Analysis of MQTT Loss and Delay 
+According to QoS Level](http://cgweb1.northumbria.ac.uk/SubjectAreaResources/KF7046/papers/review/iot/lkh13.pdf)
