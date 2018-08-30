@@ -469,6 +469,69 @@ die Größe der Payload drastisch reduziert werden. Außerdem kann sofort auf
 die entsprechenden Datentypen - ohne eigenes Parsing - zugegriffen werden.
 
 ## JSON
+JSON steht für **Javascript Object Notation**. Wie diese Notation genau aufgebaut
+ist steht auf [https://json-schema.org/](https://json-schema.org/).
+
+Uns interessieren in Python im Moment genau zwei Funktionen und ein import.
+```python
+import json
+
+json.loads(...)
+
+json.dumps(...)
+```
+ 
+Der Import stellt uns die Konvertierungsfunktionen von Python zur Verfügung.
+
+Die *dumps(...)*-Funktion führt ein Python Dictionary in einen JSON-String über.
+Die *loads(...)*-Funktion führt einen JSON-String in ein Python Dictionary über.
+
+Ein einfach Program wäre:
+
+```python
+import paho.mqtt.client as mqtt
+import json
+
+
+# Ist ein Callback, der ausgeführt wird, wenn sich mit dem Broker verbunden wird
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Verbindung akzeptiert")
+        client.subscribe("allgemein/spezieller")
+    elif rc == 1:
+        print("Falsche Protokollversion")
+    elif rc == 2:
+        print("Identifizierung fehlgeschlagen")
+    elif rc == 3:
+        print("Server nicht erreichbar")
+    elif rc == 4:
+        print("Falscher benutzername oder Passwort")
+    elif rc == 5:
+        print("Nicht autorisiert")
+    else:
+        print("Ungültiger Returncode")
+
+
+# Ist ein Callback, der ausgeführt wird, wenn eine Nachricht empfangen wird
+def on_message(client, userdata, msg):
+    print("Topic: \t\t" + msg.topic)
+    print("Payload: \t" + str(msg.payload))
+    payload = json.loads(str(msg.payload))
+    keys = payload.keys()
+    print("Keys: " + str(keys))
+    _dict = {'keys': str(keys)}
+    _payload = json.dumps(_dict)
+    client.publish("keys", _payload)
+
+
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
+
+client.connect("localhost", 1883, 60)
+
+client.loop_forever()
+```
 
 ## Protobuf
 Zuerst müssen wir erstmal Protobuf installieren. Dazu folgen wir der [Anleitung](https://developers.google.com/protocol-buffers/docs/downloads)
