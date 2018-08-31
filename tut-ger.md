@@ -551,7 +551,7 @@ message payload {
 Als nächstes müssen wir die entsprechende Python-Datei erstellen. Die allgemeine
 Syntax dafür lautet:
 ```bash
-protoc -I=$SRC_DIR --python_out=$DST_DIR $SRC_DIR/addressbook.proto
+protoc -I=$SRC_DIR --python_out=$DST_DIR $SRC_DIR/filename.proto
 ```
 
 In unserem Fall ist der Befehl (wir befinden uns im src-Ordner):
@@ -608,6 +608,85 @@ client.publish("protobuf", _payload.SerializeToString())
 client.loop_forever()
 ```
 
+# MQTT und Sicherheit
+Besonders wenn der Broker Verbindung zum Internet hat, muss die Kommuniktion
+abgesichert. MQTT bietet eine Authentifizierung mit Benutzername und
+Passwort an. Allerdings überträgt MQTT standardmäßig alles unverschlüsselt.
+Ds bedeutet, dass man durch Mitschneiden der Pakete ganz einfach das Passwort
+herausfinden. Deshalb gibt es die Möglichkeit die Nachrichten mit TLS zu
+verschlüsseln.
+
+## Zertifikat für TLS erstellen
+TLS (Transport Layer Security) nutzt Zertifikate. Es gibt sogenannte 
+Certificate Authorities, die diese Zertifikate herausgeben. In unserem
+Fall reicht aber auch ein selbsterstelltes Zertifikat.
+
+```bash
+sudo apt install openssl
+```
+
+Mit dem Skript das [hier](https://github.com/owntracks/tools/tree/master/TLS) 
+bereitgestellt wird, kann man sich für den selbstgebrauch ein entsprechendes
+Zertifikat erstellen. Dabei muss *ca.crt* nach ```/etc/mosquitto/ca_certificates```
+kopiert werden und die andere .crt sowie .key-Datei nach
+```/etc/mosquitto/certs```.
+
+Mit folgendem [Programm](src/example_tls.py) kann dann eine einfache TLS-Verbindung aufgebaut werden:
+
+```python
+import paho.mqtt.client as mqtt
+import json
+import ssl
+
+# Ist ein Callback, der ausgeführt wird, wenn sich mit dem Broker verbunden wird
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Verbindung akzeptiert")
+        client.subscribe("allgemein/spezieller")
+    elif rc == 1:
+        print("Falsche Protokollversion")
+    elif rc == 2:
+        print("Identifizierung fehlgeschlagen")
+    elif rc == 3:
+        print("Server nicht erreichbar")
+    elif rc == 4:
+        print("Falscher benutzername oder Passwort")
+    elif rc == 5:
+        print("Nicht autorisiert")
+    else:
+        print("Ungültiger Returncode")
+
+
+# Ist ein Callback, der ausgeführt wird, wenn eine Nachricht empfangen wird
+def on_message(client, userdata, msg):
+    print("Topic: \t\t" + msg.topic)
+    print("Payload: \t" + str(msg.payload))
+
+
+client = mqtt.Client()
+
+mqtt_username = ""
+mqtt_password = "mqttversuch"
+#client.username_pw_set(mqtt_username, password=mqtt_password)
+client.tls_set(ca_certs="./tls/ca.crt", certfile=None,
+               keyfile=None, cert_reqs=ssl.CERT_REQUIRED,
+               tls_version=ssl.PROTOCOL_TLSv1_1, ciphers=None)
+client.tls_insecure_set(False)
+client.on_connect = on_connect
+client.on_message = on_message
+
+
+client.connect("127.0.0.1", 8883, 60)
+for _ in range(10):
+    client.loop(.1)
+_dict = {"Hallo": "MQTT"}
+_payload = json.dumps(_dict)
+client.publish("allgemein/spezieller",_payload)
+
+client.loop_forever()
+```
+
+
 # Best practices
 
 ## Topics
@@ -637,25 +716,27 @@ msg.payload.replace("\x00","")
 Die meisten Broker stellen $SYS-Topics zur Verfügung. Unter Linux muss man
 beim subscriben aufpassen. So muss das $ meist durch \ escaped werden.
 
-Es gibt folgende Topics, die bereitgestellt werden sollten ( [siehe](https://github.com/mqtt/mqtt.github.io/wiki/SYS-Topics) ):
+Es gibt folgende Topics, die bereitgestellt werden sollten ( [siehe](https://github.com/mqtt/mqtt.github.io/wiki/SYS-Topics) ),
+aber **nicht** in jedem Broker (vollständig) implementiert sind:
+
 | Topic | Beschreibung |
 | --- | --- |
-|$SYS/broker/load/bytes/received  |  |
-|$SYS/broker/load/bytes/sent  |  |
-|$SYS/broker/clients/connected  |  |
-|$SYS/broker/clients/disconnected  |  |
-|$SYS/broker/clients/maximum  |  |
-|$SYS/broker/clients/total  |  |
-|$SYS/broker/messages/received  |  |
-|$SYS/broker/messages/sent  |  |
-|$SYS/broker/messages/publish/dropped  |  |
-|$SYS/broker/messages/publish/received  |  |
-|$SYS/broker/messages/publish/sent  |  |
-|$SYS/broker/messages/retained/count  |  |
-|$SYS/broker/subscriptions/count  |  |
-|$SYS/broker/time  |  |
-|$SYS/broker/uptime  |  |
-|$SYS/broker/version  |  |
+| $SYS/broker/load/bytes/received  | Anzahl der erhaltenen Bytes seit Start des Brokers  |
+| $SYS/broker/load/bytes/sent  | Anzahl der gesendeten Bytes seit Start des Brokers |
+| $SYS/broker/clients/connected  | Anzahl der aktuell verbundenen Clients |
+| $SYS/broker/clients/disconnected  | Anzahl der *persistenten* Clients, die aktuell nicht verbunden sind |
+| $SYS/broker/clients/maximum  | Die maximale Anzahl an verbundenen Clients |
+| $SYS/broker/clients/total  | Anzahl *persistenten* Clients, verbunden oder unverbunden, die Aktuell noch eine Verbindung haben |
+| $SYS/broker/messages/received  | Anzahl der empfangenen Nachrichten |
+| $SYS/broker/messages/sent  | Anzahl der gesendeten Nachrichten |
+| $SYS/broker/messages/publish/dropped  | Anzahl an Nachrichten, die gedropped werden mussten |
+| $SYS/broker/messages/publish/received  | Anzahl der PUBLISH Nachrichten, die empfangen wurden |
+| $SYS/broker/messages/publish/sent  | Anzahl der PUBLISH Nachrichten, die gesendet wurden |
+| $SYS/broker/messages/retained/count  | Anzahl der aktiven *retain*-Nachrichten |
+| $SYS/broker/subscriptions/count  | Anzahl der Subscriptions beim Broker |
+| $SYS/broker/time  | Serverzeit |
+| $SYS/broker/uptime  | Uptime des Brokers |
+| $SYS/broker/version  | Version des brokers |
 
 ## Wireshark
 
